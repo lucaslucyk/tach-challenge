@@ -1,0 +1,62 @@
+version: "3.9"
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    restart: "on-failure"
+    logging:
+      options:
+        max-size: "3m"
+        max-file: "2"
+    expose:
+      - 5672
+      - 15672
+    networks:
+      - tach
+
+  mongo:
+    image: mongo:7
+    container_name: mongo
+    logging:
+      options:
+        max-size: "3m"
+        max-file: "2"
+    restart: "on-failure"
+    env_file:
+      - .env
+    expose:
+      - 27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    volumes:
+      - tach_mongo_data:/data/db
+    # prevent logs
+    command: mongod --quiet --logpath /dev/null
+    networks:
+      - tach
+
+  mongo-express:
+    image: mongo-express:1-20-alpine3.19
+    container_name: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    env_file:
+      - .env
+    environment:
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@mongo:27017/
+    depends_on:
+      - mongo
+    networks:
+      - tach
+
+volumes:
+  tach_mongo_data:
+
+networks:
+  tach:
+    name: tach
