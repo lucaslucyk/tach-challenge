@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "tach-challenge"
+version = "0.1.0"
+description = ""
+authors = ["Lucas Lucyk <llucyk@grupospec.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+sanic = {extras = ["ext"], version = "^23.12.1"}
+pydantic = "^2.6.4"
+pydantic-settings = "^2.2.1"
+aiormq = "^6.8.0"
+beanie = "^1.25.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
