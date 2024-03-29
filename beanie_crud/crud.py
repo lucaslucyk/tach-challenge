@@ -81,9 +81,7 @@ class CRUDBase(Generic[DocumentType, CreateSchemaType, UpdateSchemaType], ABC):
     ) -> Result[DocumentType, NotFound]:
         # TODO: add validation and parse errors
         obj = await self.get(id=id)
-        if obj.is_failure:
-            return obj
-
+        obj = obj.unwrap_or_return(obj)
         document = obj.get_value()
         document = document.model_copy(
             update=data.model_dump(exclude_unset=True)
@@ -93,6 +91,5 @@ class CRUDBase(Generic[DocumentType, CreateSchemaType, UpdateSchemaType], ABC):
     async def delete(self, id: UUID) -> Result[DocumentType, NotFound]:
         # TODO: add validation and parse errors
         obj = await self.get(id=id)
-        if obj.is_failure:
-            return obj
+        obj = obj.unwrap_or_return(obj)
         return Success(await obj.get_value().delete())
