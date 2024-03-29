@@ -5,6 +5,7 @@ description = ""
 authors = ["Lucas Lucyk <llucyk@grupospec.com>"]
 license = "MIT"
 readme = "README.md"
+packages = [{include = "accounts"}, {include = "beanie_crud"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -13,7 +14,12 @@ pydantic = "^2.6.4"
 pydantic-settings = "^2.2.1"
 aiormq = "^6.8.0"
 beanie = "^1.25.0"
+python-decouple = "^3.8"
+meiga = "^1.9.7"
 
+
+[tool.poetry.group.dev.dependencies]
+diagrams = "^0.23.4"
 
 [build-system]
 requires = ["poetry-core"]
