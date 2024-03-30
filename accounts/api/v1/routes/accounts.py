@@ -1,9 +1,10 @@
 from typing import List
 from uuid import UUID
-from pydantic import TypeAdapter
+from meiga import AnyResult, Error, Failure, Success
 from sanic import Blueprint, json as json_response
 from sanic.exceptions import NotFound, BadRequest
 from sanic.request import Request
+from sanic.response import JSONResponse
 from sanic_ext import validate, openapi
 from accounts.schemas.accounts import (
     Account,
@@ -13,8 +14,17 @@ from accounts.schemas.accounts import (
 )
 from accounts.schemas.query import PaginateParams
 from accounts.crud.account import accounts as accounts_crud
+from accounts.controllers.accounts import AccountByIdController
+from beanie_crud.errors import NotFound as ModelNotFound
 
-# TODO: Add swagger docs and move to Account controllers
+def as_sanic(result: AnyResult) -> JSONResponse:
+    match result:
+        case Success(value):
+            return json_response(value.model_dump(mode="json"), status=200)
+        case Failure(ModelNotFound):
+            raise NotFound(f"Account not found")
+        case Failure(Error):
+            raise BadRequest(f"Error getting account")
 
 
 blueprint = Blueprint("accounts")
@@ -60,11 +70,16 @@ async def get_accounts(
 )
 async def get_account_by_id(request: Request, account_id: UUID) -> Account:
     """Get account by id"""
-    account = await accounts_crud.get(id=account_id)
-    if account.is_failure:
-        raise NotFound(f"Account {account_id} not found")
-    out = Account(**account.get_value().model_dump(mode="json"))
-    return json_response(out.model_dump(mode="json"))
+    result = await AccountByIdController().execute(account_id=account_id)
+    return as_sanic(result)
+    
+    # return json_response(result.model_dump(mode="json"))
+    
+    # account = await accounts_crud.get(id=account_id)
+    # if account.is_failure:
+    #     raise NotFound(f"Account {account_id} not found")
+    # out = Account(**account.get_value().model_dump(mode="json"))
+    # return json_response(out.model_dump(mode="json"))
 
 
 @blueprint.get("/alias/<account_alias:str>")

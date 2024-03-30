@@ -1,4 +1,4 @@
-from accounts.api.app import app as sanic_app
+from accounts.app import app as sanic_app
 from accounts.config import settings
 
 if __name__ == "__main__":
