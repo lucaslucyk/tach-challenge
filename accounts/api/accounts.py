@@ -26,6 +26,8 @@ blueprint = Blueprint("accounts", version=1)
 @validate(json=AccountIn)
 async def create_account(request: Request, body: AccountIn):
     result = await CreateAccountController().execute(body.to_account())
+    if result.is_failure:
+        result.transform()
     return json_response(
         AccountOut.from_account(result.value).model_dump(mode="json")
     )

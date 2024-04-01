@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime as dt
 from petisco import AggregateRoot, Uuid
 from pydantic import Field, validator
 
@@ -11,7 +11,7 @@ class Account(AggregateRoot):
     symbol: str
     balance: float = Field(..., ge=0.0)
     active: bool = Field(default=True)
-    created_at: datetime | None = None
+    created_at: dt.datetime | None = None
 
     @validator("aggregate_id", pre=True, always=True)
     def set_aggregate_id(cls, v):
@@ -19,7 +19,7 @@ class Account(AggregateRoot):
 
     @validator("created_at", pre=True, always=True)
     def set_created_at(cls, v):
-        return v or datetime.now(datetime.UTC)
+        return v or dt.datetime.utcnow()
 
     @staticmethod
     def create(

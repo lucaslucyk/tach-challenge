@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 from beanie import Indexed
 from petisco import Uuid
 from pydantic import Field
+import pymongo
 from petisco_sanic.extra.beanie.document.document_base import DocumentBase
 from accounts.src.account.shared.domain.account import Account
 
@@ -15,7 +16,7 @@ class DocumentAccount(DocumentBase[Account]):
 
     # beanie
     id: UUID = Field(default_factory=uuid4)
-    aggregate_id: UUID = Field(default_factory=uuid4)
+    aggregate_id: Annotated[str, Indexed(str, unique=True)]
     alias: Annotated[str, Indexed(str, unique=True)]
     name: str = Field(..., min_length=5, max_length=100)
     symbol: str
@@ -25,6 +26,12 @@ class DocumentAccount(DocumentBase[Account]):
 
     class Settings:
         name = "accounts"
+        indexes = [
+            [
+                ("alias", pymongo.TEXT),
+                ("aggregate_id", pymongo.TEXT),
+            ],
+        ]
 
     def to_domain(self) -> Account:
         return Account(

@@ -12,7 +12,8 @@
             "console": "integratedTerminal",
             "envFile": "${workspaceFolder}/.env",
             "cwd": "${workspaceFolder}/accounts",
-            "python": "${command:python.interpreterPath}"
+            "python": "${command:python.interpreterPath}",
+            "justMyCode": false
         }
     ]
 }

@@ -1,5 +1,6 @@
 from typing import List, Optional, Tuple
 from beanie import SortDirection
+from beanie.odm.operators.find.comparison import Eq
 from meiga import BoolResult, Error, Failure, Result, Success, isSuccess
 from meiga.decorators import meiga
 from petisco import (
@@ -9,9 +10,11 @@ from petisco import (
     Uuid,
     databases,
 )
+from petisco.base.domain.errors.defaults.already_exists import AlreadyExists
 from petisco_sanic.base.application.patterns.async_crud_repository import (
     AsyncCrudRepository,
 )
+
 # from pymongo.client_session import ClientSession
 from accounts.src.account.shared.domain.account import Account
 from accounts.src.account.shared.infrastructure.document.account import (
@@ -32,18 +35,45 @@ class DocumentAccountRepository(AsyncCrudRepository[Account]):
     async def save(
         self,
         account: Account,
-    ) -> Result[Account, AggregateAlreadyExistError]:
+    ) -> Result[Account, AggregateAlreadyExistError | AlreadyExists]:
 
-        document_account = await self.document.find_one(
-            self.document.aggregate_id == account.aggregate_id,
-            # session=self.session,
-        )
-        if document_account:
-            return Failure(AggregateAlreadyExistError(account.aggregate_id))
+        # check if exists an account with received id
+        if await self.document.find_one(
+            self.document.aggregate_id == account.aggregate_id.value
+        ).exists():
+            return Failure(
+                AggregateAlreadyExistError(account.aggregate_id.value)
+            )
+
+        # check if exists an account with received alias
+        if await self.document.find_one(
+            self.document.alias == account.alias
+        ).exists():
+            return Failure(
+                AlreadyExists(additional_info={"alias": account.alias})
+            )
+
+        # conditions = [
+        #     Eq(self.document.aggregate_id, account.aggregate_id.value),
+        #     Eq(self.document.alias, account.alias),
+        # ]
+        # document_account = await self.document.find_one({"$or": conditions})
+        # if document_account:
+        #     return Failure(
+        #         AlreadyExists(
+        #             account_id=(
+        #                 str(account.aggregate_id.value)
+        #                 if account.aggregate_id
+        #                 else None
+        #             ),
+        #             additional_info=account.alias,
+        #         ),
+        #     )
 
         document_account = self.document.from_domain(account)
+        
         # await document_account.save(session=self.session)
-        await document_account.save()
+        document_account = await document_account.save()
 
         return Success(document_account.to_domain())
 
@@ -79,8 +109,8 @@ class DocumentAccountRepository(AsyncCrudRepository[Account]):
     async def remove(self, aggregate_id: Uuid) -> Result[Account, Error]:
 
         document_account = await self.document.find_one(
-            self.document.aggregate_id == aggregate_id, 
-            # session=self.session, 
+            self.document.aggregate_id == aggregate_id,
+            # session=self.session,
         )
 
         if not document_account:

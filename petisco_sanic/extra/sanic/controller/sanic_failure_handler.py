@@ -57,9 +57,9 @@ def sanic_failure_handler(result: AnyResult, error_map: ErrorMap) -> NoReturn:
     assert isinstance(http_error.status_code, int)
     http_exception = HTTPException(
         message=detail,
-        status_code=http_error.status_code,
         headers=http_error.headers,
     )
+    http_exception.status_code=http_error.status_code
 
     if (
         isinstance(domain_error, DomainError)

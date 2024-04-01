@@ -18,7 +18,7 @@ class AsyncSanicController(AsyncController):
         return SanicResultMapper.from_config(config)
 
     @abstractmethod
-    def execute(self, *args: Any, **kwargs: Any) -> AnyResult:
+    async def execute(self, *args: Any, **kwargs: Any) -> AnyResult:
         return NotImplementedMethodError
 
     @classmethod

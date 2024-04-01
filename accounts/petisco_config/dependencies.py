@@ -18,7 +18,7 @@ def dependencies_provider() -> list[Dependency]:
             envar_modifier="ACCOUNT_REPOSITORY_TYPE",
             builders={
                 "default": Builder(DocumentAccountRepository),
-                "memory": Builder(InmemoryCrudRepository[Account]),
+                # "memory": Builder(InmemoryCrudRepository[Account]),
             },
         )
     ]
