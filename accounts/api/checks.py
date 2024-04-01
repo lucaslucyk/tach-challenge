@@ -9,6 +9,6 @@ blueprint = Blueprint("healthcheck", version=1)
 
 
 @blueprint.get("/")
-async def healtcheck(request: Request):
+async def healthcheck(request: Request):
     result = HealthCheckController().execute()
     return json_response(result.value)
