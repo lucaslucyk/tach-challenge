@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     rabbitmq_uri: str = config("RABBITMQ_URI")
 
 
-class TachConfig(Config):
+class SanicConfig(Config):
     ...
 
 
