@@ -2,7 +2,7 @@ import datetime as dt
 from petisco import AggregateRoot, Uuid
 from pydantic import Field, validator
 
-from accounts.src.account.shared.domain.events import AccountCreated
+from accounts.src.account.shared.domain.events import AccountReceived
 
 
 class Account(AggregateRoot):
@@ -38,5 +38,5 @@ class Account(AggregateRoot):
             active=active,
             aggregate_id=aggregate_id,
         )
-        account.record(AccountCreated())
+        account.record(AccountReceived(data=account.model_dump(mode="json")))
         return account

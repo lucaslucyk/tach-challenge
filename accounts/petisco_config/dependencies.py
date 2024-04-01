@@ -1,5 +1,5 @@
 from petisco import Builder, CrudRepository, Dependency, InmemoryCrudRepository
-# from petisco.extra.rabbitmq import get_rabbitmq_message_dependencies
+from petisco.extra.rabbitmq import get_rabbitmq_message_dependencies
 from accounts import APPLICATION_NAME, ORGANIZATION
 from accounts.src.account.shared.domain.account import Account
 from accounts.src.account.shared.infrastructure.document.account_repository import (
@@ -33,9 +33,9 @@ def dependencies_provider() -> list[Dependency]:
     #     ),
     # ]
 
-    # message_dependencies = get_rabbitmq_message_dependencies(
-    #     ORGANIZATION, APPLICATION_NAME
-    # )
+    message_dependencies = get_rabbitmq_message_dependencies(
+        ORGANIZATION, APPLICATION_NAME
+    )
 
-    dependencies = repositories # + app_services + message_dependencies
+    dependencies = repositories + message_dependencies # + app_services
     return dependencies

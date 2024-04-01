@@ -12,8 +12,6 @@ from accounts.src.account.shared.domain.account import Account
 
 class DocumentAccount(DocumentBase[Account]):
 
-    # __tablename__ = "Account"
-
     # beanie
     id: UUID = Field(default_factory=uuid4)
     aggregate_id: Annotated[str, Indexed(str, unique=True)]

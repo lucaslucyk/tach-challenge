@@ -1,5 +1,5 @@
 from meiga import Error, Result
-from petisco import AggregateAlreadyExistError, Container  # , CrudRepository, DomainEventBus
+from petisco import AggregateAlreadyExistError, Container, DomainEventBus  # , CrudRepository
 from petisco.base.domain.errors.defaults.already_exists import AlreadyExists
 from petisco_sanic.extra.sanic import AsyncSanicController
 from accounts.src.account.create.application.account_creator import (
@@ -27,12 +27,12 @@ class CreateAccountController(AsyncSanicController):
         }
 
     async def execute(self, account: Account) -> Result[Account, Error]:
-        # repository = Container.get(CrudRepository, alias="account_repository")
+        domain_event_bus = Container.get(DomainEventBus)
         account_creator = AccountCreator(
             # labeler=Container.get(AccountLabeler),
             repository=Container.get(
                 AsyncCrudRepository, alias="account_repository"
             ),
-            # domain_event_bus=Container.get(DomainEventBus),
+            domain_event_bus=domain_event_bus,
         )
         return await account_creator.execute(account=account)

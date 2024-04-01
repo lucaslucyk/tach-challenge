@@ -8,8 +8,6 @@ from accounts.application import application
 from accounts.src.account.shared.infrastructure.document.account import (
     DocumentAccount as Account,
 )
-import uvicorn
-
 application.configure()
 app: Sanic = application.get_app()
 
@@ -30,6 +28,6 @@ if __name__ == "__main__":
     # uvicorn.run(app, host="0.0.0.0", port=8000)
     app.run(
         host="0.0.0.0",
-        port=5000,
+        port=5050,
         dev=False,
     )

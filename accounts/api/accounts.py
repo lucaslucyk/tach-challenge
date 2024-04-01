@@ -37,5 +37,8 @@ async def create_account(request: Request, body: AccountIn):
 async def retrieve_all_accounts(request: Request):
     result = await RetrieveAllAccountsController().execute()
     return json_response(
-        [AccountOut.from_account(a).model_dump(mode="json") for a in result.value]
+        [
+            AccountOut.from_account(a).model_dump(mode="json")
+            for a in result.value
+        ]
     )
