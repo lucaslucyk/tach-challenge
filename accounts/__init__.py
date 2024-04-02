@@ -14,8 +14,10 @@ def read_application_version(filename: str) -> str:
 
 
 ROOT_PATH = os.path.abspath(os.path.dirname(__file__))
-APPLICATION_NAME = "accounts-app"
 ORGANIZATION = "tach"
+APPLICATION_NAME = "accounts-app"
+TRANSACTIONS_ORGANIZATION = "tach"
+TRANSACTIONS_APP_NAME = "transactions-app"
 APPLICATION_VERSION = read_application_version(f"{ROOT_PATH}/VERSION")
 APPLICATION_LATEST_DEPLOY = read_application_latest_deploy(f"{ROOT_PATH}/DEPLOY")
 ENVIRONMENT = os.environ.get("ENVIRONMENT", "local").lower()
