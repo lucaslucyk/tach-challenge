@@ -2,13 +2,14 @@ from typing import Literal
 from uuid import UUID
 from meiga import (
     AnyResult,
+    BoolResult,
     Error,
     Failure,
     Result,
     Success,
 )
 from meiga.decorators import meiga
-from petisco import AggregateNotFoundError, AsyncUseCase, DomainEventBus
+from petisco import AsyncUseCase, DomainEventBus
 
 from accounts.src.account.shared.domain.events import (
     AccountNotAvailable,
@@ -67,44 +68,31 @@ class FundsMover(AsyncUseCase):
             return Failure(NotFound(f"Account {account_id} not found"))
         return account
 
-    async def execute(self, transaction: Transaction) -> AnyResult:
-        source = await self.account_or_error(transaction, "source_account_id")
-        source = source.unwrap_or_raise()
-
-        target = await self.account_or_error(transaction, "target_account_id")
-        target = target.unwrap_or_raise()
-
+    def check_active(
+        self, account: Account, transaction: Transaction
+    ) -> BoolResult:
         # check active accounts
-        if not source.active:
+        if not account.active:
             transaction.record(
                 AccountNotAvailable(
                     trigger=transaction.model_dump(mode="json"),
-                    account_id=str(source.aggregate_id),
+                    account_id=str(account.aggregate_id),
                 )
             )
             self.domain_event_bus.publish(transaction.pull_domain_events())
             return Failure(
-                Error(f"Account {source.aggregate_id} not available")
+                Error(f"Account {account.aggregate_id} not available")
             )
+        return Success()
 
-        # check active accounts
-        if not target.active:
-            transaction.record(
-                AccountNotAvailable(
-                    trigger=transaction.model_dump(mode="json"),
-                    account_id=str(target.aggregate_id),
-                )
-            )
-            self.domain_event_bus.publish(transaction.pull_domain_events())
-            return Failure(
-                Error(f"Account {target.aggregate_id} not available")
-            )
-
-        # check symbols
-        if (
-            source.symbol != target.symbol
-            or source.symbol != transaction.symbol
-        ):
+    def check_symbols(
+        self, transaction: Transaction, source: Account, target: Account
+    ) -> BoolResult:
+        _checks = (
+            source.symbol != target.symbol,
+            source.symbol != transaction.symbol,
+        )
+        if any(_checks):
             transaction.record(
                 SymbolError(
                     trigger=transaction.model_dump(mode="json"),
@@ -115,48 +103,86 @@ class FundsMover(AsyncUseCase):
             self.domain_event_bus.publish(transaction.pull_domain_events())
             return Failure(Error(f"Symbols do not match"))
 
+        return Success()
+
+    def check_funds(
+        self, account: Account, transaction: Transaction
+    ) -> BoolResult:
         # check balance
-        if source.balance - transaction.amount < 0.0:
+        if account.balance - transaction.amount < 0.0:
             transaction.record(
                 InsufficientFunds(
                     trigger=transaction.model_dump(mode="json"),
-                    account_id=str(source.aggregate_id),
+                    account_id=str(account.aggregate_id),
                 )
             )
             self.domain_event_bus.publish(transaction.pull_domain_events())
             return Failure(
                 Error(
-                    f"Account {source.aggregate_id} does not have sufficient funds"
+                    f"Account {account.aggregate_id} does not have sufficient funds"
                 )
             )
+        return Success()
+
+    async def move_funds(
+        self,
+        account: Account,
+        action: Literal["add", "sub"],
+        transaction: Transaction,
+    ) -> AnyResult:
+        # apply changes to account balance
+        match action:
+            case "add":
+                account.balance += transaction.amount
+            case "sub":
+                account.balance -= transaction.amount
+            case _:
+                return Failure(Error("Invalid action"))
+
+        # update account
+        result = await self.repository.update(account)
+        if result.is_failure:
+            transaction.record(
+                IncompleteTransaction(
+                    trigger=transaction.model_dump(mode="json"),
+                )
+            )
+            self.domain_event_bus.publish(transaction.pull_domain_events())
+            return Failure(
+                Error("Funds could not be deducted from the account account")
+            )
+
+        return Success()
+
+    @meiga
+    async def execute(self, transaction: Transaction) -> AnyResult:
+        # get source account
+        source = (
+            await self.account_or_error(transaction, "source_account_id")
+        ).unwrap_or_raise()
+
+        # get target account
+        target = (
+            await self.account_or_error(transaction, "target_account_id")
+        ).unwrap_or_raise()
+
+        # check actives
+        _ = self.check_active(source, transaction).unwrap_or_raise()
+        _ = self.check_active(target, transaction).unwrap_or_raise()
+
+        # check symbols
+        _ = self.check_symbols(transaction, source, target).unwrap_or_raise()
+
+        # check balance
+        _ = self.check_funds(source, transaction).unwrap_or_raise()
 
         # deduct funds from source account
-        source.balance -= transaction.amount
-        source = await self.repository.update(source)
-        if source.is_failure:
-            transaction.record(
-                IncompleteTransaction(
-                    trigger=transaction.model_dump(mode="json"),
-                )
-            )
-            self.domain_event_bus.publish(transaction.pull_domain_events())
-            return Failure(
-                Error("Funds could not be deducted from the source account")
-            )
-
-        # add funds to target account
-        target.balance += transaction.amount
-        target = await self.repository.update(target)
-        if target.is_failure:
-            transaction.record(
-                IncompleteTransaction(
-                    trigger=transaction.model_dump(mode="json"),
-                )
-            )
-            self.domain_event_bus.publish(transaction.pull_domain_events())
-            return Failure(
-                Error("Funds could not be deducted from the target account")
-            )
+        _ = (
+            await self.move_funds(source, "sub", transaction)
+        ).unwrap_or_raise()
+        _ = (
+            await self.move_funds(target, "add", transaction)
+        ).unwrap_or_raise()
 
         # transaction completed successfully
         transaction.record(
