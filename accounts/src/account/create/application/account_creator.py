@@ -10,11 +10,9 @@ from accounts.src.account.shared.domain.account import Account
 class AccountCreator(AsyncUseCase):
     def __init__(
         self,
-        # labeler: AccountLabeler,
         repository: AsyncCrudRepository,
         domain_event_bus: DomainEventBus,
     ):
-        # self.labeler = labeler
         self.repository = repository
         self.domain_event_bus = domain_event_bus
 
@@ -22,7 +20,6 @@ class AccountCreator(AsyncUseCase):
         self,
         account: Account,
     ) -> Result[Account, Error]:
-        # account = self.labeler.execute(account).unwrap_or_return()
         result = await self.repository.save(account)
         if result.is_failure:
             return result

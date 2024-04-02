@@ -1,21 +1,17 @@
 from typing import List, Optional, Tuple, Union
 from beanie import SortDirection
 from beanie.odm.operators.find.comparison import Eq
-from meiga import Error, Failure, Result, Success #, BoolResult, isSuccess
+from meiga import Error, Failure, Result, Success
 from meiga.decorators import meiga
 from petisco import (
     AggregateAlreadyExistError,
     AggregateNotFoundError,
-    # CrudRepository,
     Uuid,
-    databases,
 )
 from petisco.base.domain.errors.defaults.already_exists import AlreadyExists
 from petisco_sanic.base.application.patterns.async_crud_repository import (
     AsyncCrudRepository,
 )
-
-# from pymongo.client_session import ClientSession
 from accounts.src.account.shared.domain.account import Account
 from accounts.src.account.shared.infrastructure.document.account import (
     DocumentAccount,
@@ -26,10 +22,6 @@ class DocumentAccountRepository(AsyncCrudRepository[Account]):
 
     def __init__(self):
         self.document = DocumentAccount
-        # self.session: ClientSession = databases.get(
-        #     ClientSession,
-        #     alias="document-accounts"
-        # )
 
     @meiga
     async def save(
@@ -66,39 +58,58 @@ class DocumentAccountRepository(AsyncCrudRepository[Account]):
                 AlreadyExists(additional_info={"alias": account.alias})
             )
 
+        # save document
         document_account = self.document.from_domain(account)
         document_account = await document_account.save()
 
+        # cast to domain format
         return Success(document_account.to_domain())
 
     @meiga
     async def retrieve(self, aggregate_id: Uuid) -> Result[Account, Error]:
-        document_account = await self.document.find_one(
-            self.document.aggregate_id == aggregate_id,
-        )
+        """Retreive an account by aggregate id
+
+        Args:
+            aggregate_id (Uuid): Aggregate id
+
+        Returns:
+            Result[Account, Error]: Domain Account or error
+        """
+        
+        if not isinstance(aggregate_id, Uuid):
+            aggregate_id = Uuid(aggregate_id)
+        try:
+            document_account = await self.document.find_one(
+                self.document.aggregate_id == aggregate_id.value,
+            )
+        except Exception as err:
+            return Failure(err)
 
         if not document_account:
             return Failure(AggregateNotFoundError(aggregate_id))
 
+        # cast to domain format
         account = document_account.to_domain()
         return Success(account)
 
     @meiga
     async def update(self, account: Account) -> Result[Account, Error]:
-
         document_account = await self.document.find_one(
             self.document.aggregate_id == account.aggregate_id.value,
         )
 
         if not document_account:
             return Failure(AggregateNotFoundError(account.aggregate_id))
-
-        document_account = self.document.from_domain(account)
-        document_account = await document_account.save()
-        return Success(document_account.to_domain())
+                
+        document = self.document.from_domain(account)
+        document.id = document_account.id
+        document = await document.save()
+        return Success(document.to_domain())
 
     @meiga
     async def remove(self, aggregate_id: Uuid) -> Result[Account, Error]:
+        if not isinstance(aggregate_id, Uuid):
+            aggregate_id = Uuid(aggregate_id)
 
         document_account = await self.document.find_one(
             self.document.aggregate_id == aggregate_id,
