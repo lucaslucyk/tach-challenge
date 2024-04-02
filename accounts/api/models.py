@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional, Tuple
 from uuid import UUID
 from pydantic import BaseModel, Field
 from sanic_ext import openapi
@@ -52,3 +52,21 @@ class AccountOut(Base):
             id=UUID(account.aggregate_id.value),
             created_at=account.created_at,
         )
+
+
+@openapi.component
+class AccountList(Base):
+    accounts: List[AccountOut]
+
+    @staticmethod
+    def from_accounts(accounts: List[Account]) -> "AccountList":
+        return AccountList(
+            accounts=[AccountOut.from_account(account) for account in accounts]
+        )
+
+
+@openapi.component
+class Paginator(BaseModel):
+    limit: Optional[int] = None
+    offset: Optional[int] = None
+    sort: Optional[List[Tuple[str, int]]] = None

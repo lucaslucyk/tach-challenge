@@ -2,7 +2,7 @@ from sanic import Blueprint
 from sanic.request import Request
 from sanic.response import json as json_response
 from sanic_ext import validate, openapi
-from accounts.api.models import AccountIn, AccountOut
+from accounts.api.models import AccountIn, AccountOut, AccountList, Paginator
 from accounts.src.account.create.application.create_account_controller import (
     CreateAccountController,
 )
@@ -34,11 +34,20 @@ async def create_account(request: Request, body: AccountIn):
 
 
 @blueprint.get("/")
-async def retrieve_all_accounts(request: Request):
+@openapi.response(
+    200,
+    {
+        "application/json": AccountList.model_json_schema(
+            ref_template="#/components/schemas/{model}"
+        )
+    },
+    "Current accounts",
+)
+@openapi.parameter("limit", "number", "query")
+@validate(query=Paginator)
+async def retrieve_all_accounts(request: Request, query: Paginator):
+    # TODO: add all parameters from model and add to controller
     result = await RetrieveAllAccountsController().execute()
     return json_response(
-        [
-            AccountOut.from_account(a).model_dump(mode="json")
-            for a in result.value
-        ]
+        AccountList.from_accounts(result.value).model_dump(mode="json")
     )
