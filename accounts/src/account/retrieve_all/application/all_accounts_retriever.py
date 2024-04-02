@@ -1,3 +1,4 @@
+from typing import List, Optional, Tuple
 from meiga import Error, Result, Success
 from petisco import AsyncUseCase
 from petisco_sanic.base.application.patterns.async_crud_repository import (
@@ -13,7 +14,16 @@ class AllAccountsRetriever(AsyncUseCase):
     ):
         self.repository = repository
 
-    async def execute(self) -> Result[list[Account], Error]:
-        accounts = await self.repository.retrieve_all()
+    async def execute(
+        self,
+        skip: int = 0,
+        limit: int = 100,
+        sort: Optional[List[Tuple[str, int]]] = None,
+    ) -> Result[list[Account], Error]:
+        accounts = await self.repository.retrieve_all(
+            skip=skip,
+            limit=limit,
+            sort=sort,
+        )
         accounts = accounts.unwrap_or_return()
         return Success(accounts)

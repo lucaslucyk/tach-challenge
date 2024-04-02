@@ -68,5 +68,5 @@ class AccountList(Base):
 @openapi.component
 class Paginator(BaseModel):
     limit: Optional[int] = None
-    offset: Optional[int] = None
+    skip: Optional[int] = None
     sort: Optional[List[Tuple[str, int]]] = None

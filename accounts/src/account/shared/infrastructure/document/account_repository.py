@@ -78,12 +78,9 @@ class DocumentAccountRepository(AsyncCrudRepository[Account]):
         
         if not isinstance(aggregate_id, Uuid):
             aggregate_id = Uuid(aggregate_id)
-        try:
-            document_account = await self.document.find_one(
-                self.document.aggregate_id == aggregate_id.value,
-            )
-        except Exception as err:
-            return Failure(err)
+        document_account = await self.document.find_one(
+            self.document.aggregate_id == aggregate_id.value,
+        )
 
         if not document_account:
             return Failure(AggregateNotFoundError(aggregate_id))
