@@ -8,12 +8,17 @@ from accounts.api.models import AccountIn, AccountOut, AccountList, Paginator
 from accounts.src.account.create.application.create_account_controller import (
     CreateAccountController,
 )
-from accounts.src.account.delete.application.delete_account_controller import DeleteAccountController
+from accounts.src.account.delete.application.delete_account_controller import (
+    DeleteAccountController,
+)
 from accounts.src.account.retrieve.application.retrieve_account_controller import (
     RetrieveAccountController,
 )
 from accounts.src.account.retrieve_all.application.retrieve_all_accounts_controller import (
     RetrieveAllAccountsController,
+)
+from accounts.src.account.update.application.update_account_controller import (
+    UpdateAccountController,
 )
 
 blueprint = Blueprint("accounts", version=1)
@@ -30,7 +35,7 @@ blueprint = Blueprint("accounts", version=1)
     required=True,
 )
 @openapi.response(
-    200,
+    201,
     {
         "application/json": AccountOut.model_json_schema(
             ref_template="#/components/schemas/{model}"
@@ -105,6 +110,35 @@ async def get_account_by_id(request: Request, id: UUID):
 async def delete_account(request: Request, id: UUID):
     aggregate_id = Uuid(str(id))
     result = await DeleteAccountController().execute(aggregate_id)
+    if result.is_failure:
+        result.transform()
+    return json_response(
+        AccountOut.from_account(result.value).model_dump(mode="json")
+    )
+
+
+@blueprint.patch("/")
+@openapi.body(
+    {
+        "application/json": AccountIn.model_json_schema(
+            ref_template="#/components/schemas/{model}"
+        )
+    },
+    description="Account data",
+    required=True,
+)
+@openapi.response(
+    200,
+    {
+        "application/json": AccountOut.model_json_schema(
+            ref_template="#/components/schemas/{model}"
+        )
+    },
+    "Account data",
+)
+@validate(json=AccountIn)
+async def update_account(request: Request, body: AccountIn):
+    result = await UpdateAccountController().execute(body.to_account())
     if result.is_failure:
         result.transform()
     return json_response(

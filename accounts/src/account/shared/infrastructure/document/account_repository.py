@@ -97,9 +97,21 @@ class DocumentAccountRepository(AsyncCrudRepository[Account]):
 
         if not document_account:
             return Failure(AggregateNotFoundError(account.aggregate_id))
+
+        if document_account.alias != account.alias:
+            # check if exists an account with received alias
+            if await self.document.find_one(
+                Eq(self.document.alias, account.alias)
+            ).exists():
+                return Failure(
+                    AlreadyExists(additional_info={"alias": account.alias})
+                )
                 
         document = self.document.from_domain(account)
+        # ensure keep original data
         document.id = document_account.id
+        document.created_at = document_account.created_at
+        
         document = await document.save()
         return Success(document.to_domain())
 
