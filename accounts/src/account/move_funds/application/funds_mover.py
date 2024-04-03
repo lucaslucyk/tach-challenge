@@ -9,7 +9,12 @@ from meiga import (
     Success,
 )
 from meiga.decorators import meiga
-from petisco import AsyncUseCase, DomainEventBus
+from petisco import (
+    AggregateNotFoundError,
+    AsyncUseCase,
+    DomainError,
+    DomainEventBus,
+)
 
 from accounts.src.account.shared.domain.events import (
     AccountNotAvailable,
@@ -18,6 +23,11 @@ from accounts.src.account.shared.domain.events import (
     IncompleteTransaction,
     InsufficientFunds,
     SymbolError,
+)
+from accounts.src.transaction.shared.domain.errors import (
+    DeductionError,
+    FundsError,
+    SymbolMatchError
 )
 from petisco_sanic.base.application.patterns.async_crud_repository import (
     AsyncCrudRepository,
@@ -54,7 +64,13 @@ class FundsMover(AsyncUseCase):
 
         account_id: UUID = getattr(transaction, attr, None)
         if not account_id:
-            return Failure(Error("Must specify the transaction kind"))
+            return Failure(
+                DomainError(
+                    additional_info={
+                        "message": "Must specify the transaction kind"
+                    }
+                )
+            )
 
         account = await self.repository.retrieve(account_id)
         if account.is_failure:
@@ -80,9 +96,7 @@ class FundsMover(AsyncUseCase):
                 )
             )
             self.domain_event_bus.publish(transaction.pull_domain_events())
-            return Failure(
-                Error(f"Account {account.aggregate_id} not available")
-            )
+            return Failure(AggregateNotFoundError(account.aggregate_id))
         return Success()
 
     def check_symbols(
@@ -101,7 +115,7 @@ class FundsMover(AsyncUseCase):
                 )
             )
             self.domain_event_bus.publish(transaction.pull_domain_events())
-            return Failure(Error(f"Symbols do not match"))
+            return Failure(SymbolMatchError("Symbols do not match"))
 
         return Success()
 
@@ -117,11 +131,7 @@ class FundsMover(AsyncUseCase):
                 )
             )
             self.domain_event_bus.publish(transaction.pull_domain_events())
-            return Failure(
-                Error(
-                    f"Account {account.aggregate_id} does not have sufficient funds"
-                )
-            )
+            return Failure(FundsError(account.aggregate_id))
         return Success()
 
     async def move_funds(
@@ -137,11 +147,18 @@ class FundsMover(AsyncUseCase):
             case "sub":
                 account.balance -= transaction.amount
             case _:
-                return Failure(Error("Invalid action"))
+                return Failure(
+                    DomainError(
+                        additional_info={
+                            "message": f"{action} is not a valid action"
+                        }
+                    )
+                )
 
         # update account
         result = await self.repository.update(account)
         if result.is_failure:
+            # TODO: Reprocess or reject on transactions service
             transaction.record(
                 IncompleteTransaction(
                     trigger=transaction.model_dump(mode="json"),
@@ -149,7 +166,7 @@ class FundsMover(AsyncUseCase):
             )
             self.domain_event_bus.publish(transaction.pull_domain_events())
             return Failure(
-                Error("Funds could not be deducted from the account account")
+                DeductionError(account.aggregate_id, transaction.amount)
             )
 
         return Success()

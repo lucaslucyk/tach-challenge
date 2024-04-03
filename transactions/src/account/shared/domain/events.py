@@ -18,6 +18,10 @@ class AccountNotAvailable(FundsError):
     account_id: str
 
 
+class InsufficientFunds(FundsError):
+    account_id: str
+
+
 class SymbolError(FundsError):
     source_symbol: str
     target_symbol: str

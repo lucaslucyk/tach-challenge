@@ -9,13 +9,13 @@ from petisco.extra.rabbitmq import RabbitMqConfigurer
 from petisco.base.domain.message.domain_event_subscriber import (
     DomainEventSubscriber,
 )
-
 from transactions.src.transaction.shared.domain.transaction import Transaction
 from transactions.src.account.shared.domain.events import (
     FundsMoved,
     AccountNotFound,
     AccountNotAvailable,
     SymbolError,
+    InsufficientFunds,
 )
 from transactions.src.transaction.approve.application.approve_transaction_controller import (
     ApproveTransactionController,
@@ -24,7 +24,7 @@ from transactions.src.transaction.reject.application.reject_transaction_controll
     RejectTransactionController,
 )
 from transactions.src.transaction.shared.infrastructure.document.transaction import (
-    DocumentTransaction
+    DocumentTransaction,
 )
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from transactions.config import settings
@@ -33,7 +33,13 @@ from transactions.config import settings
 class LogOnAccountCreated(DomainEventSubscriber):
 
     def subscribed_to(self) -> list[type[DomainEvent]]:
-        return [FundsMoved, AccountNotFound, AccountNotAvailable, SymbolError]
+        return [
+            FundsMoved,
+            AccountNotFound,
+            AccountNotAvailable,
+            SymbolError,
+            InsufficientFunds,
+        ]
 
     async def start_db(self):
         # TODO: add to databases with an AsyncApplication and AsyncConfigurer
@@ -60,6 +66,8 @@ class LogOnAccountCreated(DomainEventSubscriber):
         return BoolResult(result.is_success)
 
     async def process_reject_event(self, transaction: Transaction) -> AnyResult:
+        await self.start_db()
+        
         result = await RejectTransactionController().execute(transaction)
         if result.is_success:
             logger.info(f"Transaction rejected result: {result}")
@@ -72,17 +80,26 @@ class LogOnAccountCreated(DomainEventSubscriber):
     def handle(
         self,
         domain_event: Union[
-            FundsMoved, AccountNotFound, AccountNotAvailable, SymbolError
+            FundsMoved,
+            AccountNotFound,
+            AccountNotAvailable,
+            SymbolError,
+            InsufficientFunds,
         ],
     ) -> BoolResult:
         logger.info("Domain event received!")
         transaction: Transaction = Transaction.create(**domain_event.trigger)
         event_kind = domain_event.get_message_name()
         match event_kind:
-            case 'funds.moved':
+            case "funds.moved":
                 logger.info(f"Transaction created event: {domain_event}")
                 return anyio.run(self.process_approve_event, transaction)
-            case 'account.not.found' | 'account.not.available' | 'symbol.error':
+            case (
+                "account.not.found"
+                | "account.not.available"
+                | "symbol.error"
+                | "insufficient.funds"
+            ):
                 logger.info(f"Transaction rejected event: {domain_event}")
                 return anyio.run(self.process_reject_event, transaction)
             case _:
