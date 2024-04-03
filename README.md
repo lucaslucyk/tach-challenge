@@ -10,10 +10,10 @@ Microservices to manage `Accounts` and `Transactions` between multiple accounts.
 This project stands on shoulders of:
 
 - [Sanic](https://sanic.dev/en/): For RESTFull API.
+- [petisco](https://github.com/alice-biometrics/petisco): For clean applications and dependency injection.
 - [meiga](https://github.com/alice-biometrics/meiga): For monad-based result type.
-- [Beanie](https://beanie-odm.dev/): For MongoDB connections.
-- [AIORMQ](https://github.com/mosquito/aiormq): For AMQP connections.
-
+- [Beanie](https://beanie-odm.dev/): For map MongoDB documents to Python objects (ODM).
+- [pika](https://pika.readthedocs.io/en/latest/): For RabbitMQ connections on `petisco`.
 
 ## Quickstart
 

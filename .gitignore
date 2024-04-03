@@ -184,3 +184,9 @@ pyrightconfig.json
 *.rdb
 
 # End of https://www.toptal.com/developers/gitignore/api/python,redis
+
+
+### Excludes ###
+!.env
+!accounts.env
+!transactions.env
