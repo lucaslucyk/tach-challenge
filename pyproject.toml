@@ -5,7 +5,7 @@ description = ""
 authors = ["Lucas Lucyk <llucyk@grupospec.com>"]
 license = "MIT"
 readme = "README.md"
-packages = [{include = "accounts"}, {include = "beanie_crud"}, {include = "petisco_sanic"}]
+packages = [{include = "petisco_sanic"}, {include = "accounts"}, {include = "transactions"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"

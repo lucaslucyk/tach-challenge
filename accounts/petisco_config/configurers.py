@@ -45,7 +45,7 @@ class LogOnTransactionCreated(DomainEventSubscriber):
         await self.start_db()
         result = await FundsMoverController().execute(transaction)
         if result.is_success:
-            logger.info(f"Transaction created result: {result}")
+            logger.info(f"Funds moved result: {result}")
 
         if result.is_failure:
             logger.error(f"Error on FundsMoverController: {result}")
@@ -58,7 +58,7 @@ class LogOnTransactionCreated(DomainEventSubscriber):
             **domain_event.data
         )
         if transaction.status != TransactionStatus.PENDING:
-            # nothing to do
+            logger.info("Transaction is already approved or rejected")
             return Success()
         return anyio.run(self.process_event, transaction)
 

@@ -59,6 +59,40 @@ services:
     networks:
       - tach
 
+  accounts:
+    image: tach-challenge:0.5
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    container_name: accounts
+    env_file:
+      - accounts.env
+    ports:
+      - 5050:5050
+    depends_on:
+      - mongo
+      - rabbitmq
+    networks:
+      - tach
+    command: ["poetry", "run", "python", "accounts/main.py"]
+
+  transactions:
+    image: tach-challenge:0.5
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    container_name: transactions
+    env_file:
+      - transactions.env
+    ports:
+      - 5051:5051
+    depends_on:
+      - mongo
+      - rabbitmq
+    networks:
+      - tach
+    command: ["poetry", "run", "python", "transactions/main.py"]
+
 volumes:
   tach_mongo_data:
 
