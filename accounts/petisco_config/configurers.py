@@ -2,7 +2,7 @@
 import anyio
 from beanie import init_beanie
 from loguru import logger
-from meiga import AnyResult, BoolResult
+from meiga import AnyResult, BoolResult, Success
 from petisco import DomainEvent
 from petisco.extra.rabbitmq import RabbitMqConfigurer
 from petisco.base.domain.message.domain_event_subscriber import (
@@ -15,7 +15,10 @@ from accounts.src.transaction.shared.domain.events import (
     TransactionCreated,
     TransactionUpdated,
 )
-from accounts.src.transaction.shared.domain.transaction import Transaction
+from accounts.src.transaction.shared.domain.transaction import (
+    Transaction,
+    TransactionStatus,
+)
 from accounts.src.account.shared.infrastructure.document.account import (
     DocumentAccount as Account,
 )
@@ -38,20 +41,9 @@ class LogOnTransactionCreated(DomainEventSubscriber):
         # Init beanie with the Product document class
         await init_beanie(db, document_models=[Account])
 
-    async def process_event(
-        self, domain_event: TransactionCreated
-    ) -> AnyResult:
+    async def process_event(self, transaction: Transaction) -> AnyResult:
         await self.start_db()
-
-        domain_transaction = Transaction.create(
-            source_account_id=domain_event.data.get("source_account_id", None),
-            target_account_id=domain_event.data.get("target_account_id", None),
-            symbol=domain_event.data.get("symbol", None),
-            amount=domain_event.data.get("amount", None),
-            aggregate_id=domain_event.data.get("aggregate_id", None),
-        )
-
-        result = await FundsMoverController().execute(domain_transaction)
+        result = await FundsMoverController().execute(transaction)
         if result.is_success:
             logger.info(f"Transaction created result: {result}")
 
@@ -62,7 +54,13 @@ class LogOnTransactionCreated(DomainEventSubscriber):
 
     def handle(self, domain_event: TransactionCreated) -> BoolResult:
         logger.info("Transaction received!")
-        return anyio.run(self.process_event, domain_event)
+        transaction: Transaction = Transaction.create(
+            **domain_event.data
+        )
+        if transaction.status != TransactionStatus.PENDING:
+            # nothing to do
+            return Success()
+        return anyio.run(self.process_event, transaction)
 
 
 configurers = [
