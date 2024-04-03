@@ -6,6 +6,17 @@ Microservices to manage `Accounts` and `Transactions` between multiple accounts.
 >[!WARNING]
 > This project is for demo purposes only. Don't use it in production environments.
 
+## How it works? 🧠
+
+![tach-ecosystem](https://raw.githubusercontent.com/lucaslucyk/tach-challenge/main/.assets/tach-ecosystem.png)
+
+
+1. Users can create accounts via the API.
+2. Users can create transactions via the API.
+3. The `Accounts` service detects newly created transactions and transfers funds accordingly.
+4. The `Transactions` service detects fund transfers and updates transaction statuses.
+5. Users can view their account balances and transaction results via the API.
+
 ## Stack 🧰
 This project stands on shoulders of:
 
