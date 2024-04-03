@@ -109,13 +109,13 @@ class DocumentAccountRepository(AsyncCrudRepository[Account]):
             aggregate_id = Uuid(aggregate_id)
 
         document_account = await self.document.find_one(
-            self.document.aggregate_id == aggregate_id,
+            self.document.aggregate_id == aggregate_id.value
         )
 
         if not document_account:
             return Failure(AggregateNotFoundError(aggregate_id))
 
-        document_account = await document_account.delete()
+        _ = await document_account.delete()
         return Success(document_account.to_domain())
 
     @meiga

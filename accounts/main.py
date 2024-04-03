@@ -24,7 +24,6 @@ async def startup_event(app: Sanic, loop):
 
 
 if __name__ == "__main__":
-    logger.info("calling from main...")
     # uvicorn.run(app, host="0.0.0.0", port=8000)
     app.run(
         host="0.0.0.0",

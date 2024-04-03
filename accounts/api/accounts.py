@@ -4,11 +4,11 @@ from sanic import Blueprint
 from sanic.request import Request
 from sanic.response import json as json_response
 from sanic_ext import validate, openapi
-from sanic_ext.extensions.openapi.definitions import Parameter
 from accounts.api.models import AccountIn, AccountOut, AccountList, Paginator
 from accounts.src.account.create.application.create_account_controller import (
     CreateAccountController,
 )
+from accounts.src.account.delete.application.delete_account_controller import DeleteAccountController
 from accounts.src.account.retrieve.application.retrieve_account_controller import (
     RetrieveAccountController,
 )
@@ -85,6 +85,26 @@ async def get_account_by_id(request: Request, id: UUID):
 
     aggregate_id = Uuid(str(id))
     result = await RetrieveAccountController().execute(aggregate_id)
+    if result.is_failure:
+        result.transform()
+    return json_response(
+        AccountOut.from_account(result.value).model_dump(mode="json")
+    )
+
+
+@blueprint.delete("/<id:uuid>")
+@openapi.response(
+    200,
+    {
+        "application/json": AccountOut.model_json_schema(
+            ref_template="#/components/schemas/{model}"
+        )
+    },
+    "Account deleted",
+)
+async def delete_account(request: Request, id: UUID):
+    aggregate_id = Uuid(str(id))
+    result = await DeleteAccountController().execute(aggregate_id)
     if result.is_failure:
         result.transform()
     return json_response(
