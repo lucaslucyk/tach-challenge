@@ -1,6 +1,19 @@
 version: "3.9"
 
 services:
+  tach-base:
+    container_name: tach-base
+    image: tach-challenge:0.6
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    volumes:
+      - ./petisco_sanic:/app/petisco_sanic
+      - ./accounts:/app/accounts
+      - ./transactions:/app/transactions
+    networks:
+      - tach
+
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: rabbitmq
@@ -60,10 +73,6 @@ services:
       - tach
 
   accounts:
-    image: tach-challenge:0.5
-    build:
-      context: .
-      dockerfile: ./Dockerfile
     container_name: accounts
     env_file:
       - accounts.env
@@ -72,15 +81,11 @@ services:
     depends_on:
       - mongo
       - rabbitmq
-    networks:
-      - tach
+    extends:
+      service: tach-base
     command: ["poetry", "run", "python", "accounts/main.py"]
 
   transactions:
-    image: tach-challenge:0.5
-    build:
-      context: .
-      dockerfile: ./Dockerfile
     container_name: transactions
     env_file:
       - transactions.env
@@ -89,8 +94,8 @@ services:
     depends_on:
       - mongo
       - rabbitmq
-    networks:
-      - tach
+    extends:
+      service: tach-base
     command: ["poetry", "run", "python", "transactions/main.py"]
 
 volumes:
