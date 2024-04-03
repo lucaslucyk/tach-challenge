@@ -59,7 +59,7 @@ class DocumentTransactionRepository(AsyncCrudRepository[Transaction]):
 
     @meiga
     async def retrieve(self, aggregate_id: Uuid) -> Result[Transaction, Error]:
-        """Retreive an transaction by aggregate id
+        """Retreive a transaction by aggregate id
 
         Args:
             aggregate_id (Uuid): Aggregate id
@@ -67,7 +67,7 @@ class DocumentTransactionRepository(AsyncCrudRepository[Transaction]):
         Returns:
             Result[Transaction, Error]: Domain Transaction or error
         """
-        
+
         if not isinstance(aggregate_id, Uuid):
             aggregate_id = Uuid(aggregate_id)
         document_transaction = await self.document.find_one(
@@ -82,26 +82,45 @@ class DocumentTransactionRepository(AsyncCrudRepository[Transaction]):
         return Success(transaction)
 
     @meiga
-    async def update(self, transaction: Transaction) -> Result[Transaction, Error]:
+    async def update(
+        self,
+        transaction: Transaction,
+    ) -> Result[Transaction, Error]:
+        """Update a transaction from inner domain transaction
+
+        Args:
+            transaction (Transaction): Domain transaction
+
+        Returns:
+            Result[Transaction, Error]: Result with domain Transaction or error
+        """
         document_transaction = await self.document.find_one(
             self.document.aggregate_id == transaction.aggregate_id.value,
         )
 
         if not document_transaction:
             return Failure(AggregateNotFoundError(transaction.aggregate_id))
-        
+
         # TODO: check if transaction is locked (pending) before update
 
         document = self.document.from_domain(transaction)
         # ensure keep original data
         document.id = document_transaction.id
         document.created_at = document_transaction.created_at
-        
+
         document = await document.save()
         return Success(document.to_domain())
 
     @meiga
     async def remove(self, aggregate_id: Uuid) -> Result[Transaction, Error]:
+        """Delete a transaction by aggregate id
+
+        Args:
+            aggregate_id (Uuid): Transaction aggregate id
+
+        Returns:
+            Result[Transaction, Error]: Result with Domain Transaction or error
+        """
         if not isinstance(aggregate_id, Uuid):
             aggregate_id = Uuid(aggregate_id)
 
@@ -123,7 +142,17 @@ class DocumentTransactionRepository(AsyncCrudRepository[Transaction]):
         limit: int = 100,
         sort: Optional[List[Tuple[str, SortDirection]]] = None,
     ) -> Result[list[Transaction], Error]:
+        """Retrieve a list of transactions using pagination params
 
+        Args:
+            skip (int, optional): Pagination offset. Defaults to 0.
+            limit (int, optional): Pagination objects limit. Defaults to 100.
+            sort (Optional[List[Tuple[str, SortDirection]]], optional):
+                Tuple with format (field, direction). Defaults to None.
+
+        Returns:
+            Result[list[Transaction], Error]: Result with domain transactions or error
+        """
         documents = await self.document.all(
             skip=skip,
             limit=limit,

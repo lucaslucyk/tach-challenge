@@ -75,7 +75,7 @@ class DocumentAccountRepository(AsyncCrudRepository[Account]):
         Returns:
             Result[Account, Error]: Domain Account or error
         """
-        
+
         if not isinstance(aggregate_id, Uuid):
             aggregate_id = Uuid(aggregate_id)
         document_account = await self.document.find_one(
@@ -91,6 +91,14 @@ class DocumentAccountRepository(AsyncCrudRepository[Account]):
 
     @meiga
     async def update(self, account: Account) -> Result[Account, Error]:
+        """Update an account from inner domain account
+
+        Args:
+            account (Account): Domain account
+
+        Returns:
+            Result[Account, Error]: Result with domain Account or error
+        """
         document_account = await self.document.find_one(
             self.document.aggregate_id == account.aggregate_id.value,
         )
@@ -106,17 +114,25 @@ class DocumentAccountRepository(AsyncCrudRepository[Account]):
                 return Failure(
                     AlreadyExists(additional_info={"alias": account.alias})
                 )
-                
+
         document = self.document.from_domain(account)
         # ensure keep original data
         document.id = document_account.id
         document.created_at = document_account.created_at
-        
+
         document = await document.save()
         return Success(document.to_domain())
 
     @meiga
     async def remove(self, aggregate_id: Uuid) -> Result[Account, Error]:
+        """Delete an Account by aggregate id
+
+        Args:
+            aggregate_id (Uuid): Account aggregate id
+
+        Returns:
+            Result[Account, Error]: Result with Domain Account or error
+        """
         if not isinstance(aggregate_id, Uuid):
             aggregate_id = Uuid(aggregate_id)
 
@@ -137,6 +153,17 @@ class DocumentAccountRepository(AsyncCrudRepository[Account]):
         limit: int = 100,
         sort: Optional[List[Tuple[str, SortDirection]]] = None,
     ) -> Result[list[Account], Error]:
+        """Retrieve a list of accounts using pagination params
+
+        Args:
+            skip (int, optional): Pagination offset. Defaults to 0.
+            limit (int, optional): Pagination objects limit. Defaults to 100.
+            sort (Optional[List[Tuple[str, SortDirection]]], optional):
+                Tuple with format (field, direction). Defaults to None.
+
+        Returns:
+            Result[list[Transaction], Error]: Result with domain accounts or error
+        """
 
         documents = await self.document.all(
             skip=skip,
