@@ -9,7 +9,7 @@ blueprint = Blueprint("healthcheck", version=1)
 
 
 @blueprint.get("/")
-async def healthcheck(request: Request):
+def healthcheck(request: Request):
     result = HealthCheckController().execute()
     if result.is_failure:
         result.transform()

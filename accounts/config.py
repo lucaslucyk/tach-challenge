@@ -14,14 +14,27 @@ class Settings(BaseSettings):
 
     # database
     mongo_uri: str = config("MONGO_URI")
-    db_name: str = config("DB_BANE", default="tach")
+    db_name: str = config("DB_NAME", default="tach")
 
     # message queue
-    rabbitmq_uri: str = config("RABBITMQ_URI")
+    # rabbitmq_uri: str = config("RABBITMQ_URI")
+
+    # petisco aplication
+    organization: str = config("ORGANIZATION", default="tach")
+    application_name: str = config("APPLICATION_NAME", default="accounts-app")
+    transactions_organization: str = config(
+        "TRANSACTIONS_ORGANIZATION", default="tach"
+    )
+    transactions_app_name: str = config(
+        "TRANSACTIONS_APP_NAME", default="transactions-app"
+    )
+
+    # application_version: str = config("APPLICATION_VERSION", default="1.0.0")
+    # application_last_deploy: str = config("APPLICATION_LAST_DEPLOY", default="1.0.0")
+    environment: str = str(config("ENVIRONMENT", default="local")).lower()
 
 
-class SanicConfig(Config):
-    ...
+class SanicConfig(Config): ...
 
 
 settings = Settings()

@@ -3,15 +3,10 @@ from petisco.extra.rabbitmq import get_rabbitmq_message_dependencies
 from petisco_sanic.base.application.patterns.async_crud_repository import (
     AsyncCrudRepository,
 )
-from accounts import (
-    APPLICATION_NAME,
-    ORGANIZATION,
-    TRANSACTIONS_ORGANIZATION,
-    TRANSACTIONS_APP_NAME,
-)
 from accounts.src.account.shared.infrastructure.document.account_repository import (
     DocumentAccountRepository,
 )
+from accounts.config import settings
 
 
 def dependencies_provider() -> list[Dependency]:
@@ -27,13 +22,13 @@ def dependencies_provider() -> list[Dependency]:
     ]
 
     account_message_dependencies = get_rabbitmq_message_dependencies(
-        organization=ORGANIZATION,
-        service=APPLICATION_NAME,
+        organization=settings.organization,
+        service=settings.application_name,
         alias="account_event_bus",
     )
     transaction_message_dependencies = get_rabbitmq_message_dependencies(
-        organization=TRANSACTIONS_ORGANIZATION,
-        service=TRANSACTIONS_APP_NAME,
+        organization=settings.transactions_organization,
+        service=settings.transactions_app_name,
         alias="transaction_message_consummer",
     )
 

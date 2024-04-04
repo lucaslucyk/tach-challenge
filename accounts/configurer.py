@@ -1,13 +1,12 @@
 from sanic.app import Sanic
-from accounts import APPLICATION_NAME, ENVIRONMENT
 from accounts.api import checks, accounts
 from accounts.cors import add_cors_headers
-from accounts.config import SanicConfig
+from accounts.config import SanicConfig, settings
 
 
 def sanic_configurer() -> Sanic:
     app = Sanic(
-        name=APPLICATION_NAME,
+        name=settings.application_name,
         config=SanicConfig()
     )
     # add blueprints
@@ -19,7 +18,7 @@ def sanic_configurer() -> Sanic:
     # app.before_server_start(setup_database)
 
     app.ext.openapi.describe(
-        APPLICATION_NAME,
+        settings.application_name,
         version="0.1.0",
         description="Create, Read, Update and Delete Accounts.",
     )

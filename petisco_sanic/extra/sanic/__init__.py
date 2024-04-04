@@ -26,6 +26,7 @@ if is_sanic_available():
 
     __all__ = [
         "SanicController",
+        "AsyncSanicController",
         "as_sanic",
         # "assert_http_exception",
         "SANIC_DEFAULT_RESPONSE",
