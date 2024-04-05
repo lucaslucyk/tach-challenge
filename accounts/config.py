@@ -1,3 +1,4 @@
+import os
 from decouple import config
 from pydantic_settings import BaseSettings
 from sanic import Config
@@ -14,7 +15,8 @@ class Settings(BaseSettings):
 
     # database
     mongo_uri: str = config("MONGO_URI")
-    db_name: str = config("DB_NAME", default="tach")
+    db_name: str = config("DB_NAME")
+    # db_name: str = os.environ.get("DB_NAME")
 
     # message queue
     # rabbitmq_uri: str = config("RABBITMQ_URI")
@@ -33,6 +35,9 @@ class Settings(BaseSettings):
     # application_last_deploy: str = config("APPLICATION_LAST_DEPLOY", default="1.0.0")
     environment: str = str(config("ENVIRONMENT", default="local")).lower()
 
+    # testing settings
+    testing: str = config("TESTING", default=False)
+    testing_end2end: str = config("TESTING_END2END", default=False)
 
 class SanicConfig(Config): ...
 

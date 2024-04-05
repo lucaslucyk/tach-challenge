@@ -1,4 +1,5 @@
 # import asyncio
+import os
 import anyio
 from beanie import init_beanie
 from loguru import logger
@@ -54,9 +55,7 @@ class LogOnTransactionCreated(DomainEventSubscriber):
 
     def handle(self, domain_event: TransactionCreated) -> BoolResult:
         logger.info("Transaction received!")
-        transaction: Transaction = Transaction.create(
-            **domain_event.data
-        )
+        transaction: Transaction = Transaction.create(**domain_event.data)
         if transaction.status != TransactionStatus.PENDING:
             logger.info("Transaction is already approved or rejected")
             return Success()
@@ -70,3 +69,6 @@ configurers = [
         # alias="account_event_bus",
     )
 ]
+
+if settings.testing and settings.testing_end2end:
+    configurers = []
