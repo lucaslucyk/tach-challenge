@@ -1,3 +1,4 @@
+import asyncio
 import pytest
 import pytest_asyncio
 from beanie import init_beanie
@@ -17,8 +18,22 @@ def py_test_mark_sync(f):
     return f  # no-op decorator
 
 
+
 @pytest_asyncio.fixture(scope="session")
-async def init_db():
+def event_loop():
+    loop = None
+    policy = asyncio.get_event_loop_policy()
+    try:
+        loop = policy.new_event_loop()
+        policy.set_event_loop(loop)
+        yield loop
+    finally:
+        if loop != None:
+            loop.close()
+
+
+@pytest_asyncio.fixture(scope="session")
+async def init_db(event_loop):
 
     # create test database and init beanie
     client = AsyncIOMotorClient(settings.mongo_uri)
