@@ -49,7 +49,8 @@ async def create_account(request: Request, body: AccountIn):
     if result.is_failure:
         result.transform()
     return json_response(
-        AccountOut.from_account(result.value).model_dump(mode="json")
+        body=AccountOut.from_account(result.value).model_dump(mode="json"),
+        status=201,
     )
 
 

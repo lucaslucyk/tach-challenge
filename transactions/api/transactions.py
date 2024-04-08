@@ -4,7 +4,12 @@ from sanic import Blueprint
 from sanic.request import Request
 from sanic.response import json as json_response
 from sanic_ext import validate, openapi
-from transactions.api.models import TransactionIn, TransactionOut, TransactionList, Paginator
+from transactions.api.models import (
+    TransactionIn,
+    TransactionOut,
+    TransactionList,
+    Paginator,
+)
 from transactions.src.transaction.create.application.create_transaction_controller import (
     CreateTransactionController,
 )
@@ -49,7 +54,10 @@ async def create_transaction(request: Request, body: TransactionIn):
     if result.is_failure:
         result.transform()
     return json_response(
-        TransactionOut.from_transaction(result.value).model_dump(mode="json")
+        body=TransactionOut.from_transaction(result.value).model_dump(
+            mode="json"
+        ),
+        status=201,
     )
 
 
