@@ -71,3 +71,8 @@ async def create_test_app(config_app):
 @pytest_asyncio.fixture(scope="session")
 def client_app_manager(create_test_app):
     return TestManager(create_test_app)
+
+
+@pytest.fixture
+def api_version_prefix():
+    return "v1"
